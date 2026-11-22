@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="lock_now"
+        android:enabled="true"
+        android:icon="@drawable/ic_lock_shortcut"
+        android:shortcutShortLabel="@string/shortcut_lock_short"
+        android:shortcutLongLabel="@string/shortcut_lock_long">
+        <intent
+            android:action="com.ritvik.passvault.action.LOCK_NOW"
+            android:targetPackage="com.ritvik.passvault"
+            android:targetClass="com.ritvik.passvault.MainActivity" />
+    </shortcut>
+</shortcuts>

@@ -1,0 +1,25 @@
+# APKs/bundles are published as Releases, not committed
+*.apk
+*.aab
+*.ap_
+# Other secrets and junk
+*.pem
+*.key
+.env
+*.log
+hs_err_pid*
+.kotlin/
+*.iml
+.gradle/
+/local.properties
+/.idea/
+.DS_Store
+/build/
+/captures/
+.externalNativeBuild/
+.cxx/
+*.jks
+*.keystore
+**/build/
+keystore.properties
+

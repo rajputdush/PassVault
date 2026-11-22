@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Same as the app's own background, so the window never flashes a different colour before the screen is drawn. -->
+    <color name="pv_window_background">#FFF5F6FA</color>
+</resources>

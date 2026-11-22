@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Open a PassVault item</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0; background: #f5f6fa; color: #1b1d26; }
+  main { max-width: 480px; margin: 0 auto; padding: 28px 20px; }
+  h1 { font-size: 1.4rem; }
+  .card { background: #fff; border-radius: 16px; padding: 18px; margin: 16px 0; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  button, a.btn { display: block; width: 100%; box-sizing: border-box; text-align: center; padding: 14px; margin-top: 10px;
+    border: 0; border-radius: 12px; background: #3b5bdb; color: #fff; font-size: 1rem; text-decoration: none; }
+  button.alt { background: #e7ebff; color: #2b44a8; }
+  textarea { width: 100%; box-sizing: border-box; height: 90px; font-size: .8rem; }
+  small { color: #5b6070; }
+</style>
+</head>
+<body>
+<main>
+  <h1>A PassVault item was shared with you</h1>
+  <div class="card" id="ok" hidden>
+    <p>Opening PassVault&hellip; If nothing happens, tap the button.</p>
+    <a class="btn" id="open" href="#">Open in PassVault</a>
+    <button class="alt" id="copy">Copy the code instead</button>
+    <p><small>Copied the code? Open PassVault, tap <b>+</b>, choose <b>Receive a shared item</b> and tap <b>Paste</b>.
+    You will also need the passphrase the sender gives you separately.</small></p>
+    <textarea id="code" readonly></textarea>
+  </div>
+  <div class="card" id="bad" hidden>
+    <p>This link has no item in it. Ask the sender to send it again.</p>
+  </div>
+  <p><small>The encrypted item is in the part of the address after the &ldquo;#&rdquo;. Browsers never send that part to
+  any server, and this page contains no trackers or outside scripts. It cannot be opened without the passphrase.</small></p>
+</main>
+<script>
+(function () {
+  var hash = location.hash.replace(/^#/, '');
+  var match = /^PVS1\.[A-Za-z0-9_-]{20,}$/.exec(hash);
+  if (!match) { document.getElementById('bad').hidden = false; return; }
+  var code = match[0];
+  var intent = 'intent://share/' + code + '#Intent;scheme=passvault;package=com.ritvik.passvault;end';
+  var link = 'passvault://share/' + code;
+  document.getElementById('ok').hidden = false;
+  document.getElementById('code').value = code;
+  var open = document.getElementById('open');
+  var android = /android/i.test(navigator.userAgent);
+  open.href = android ? intent : link;
+  document.getElementById('copy').onclick = function () {
+    var box = document.getElementById('code');
+    box.select();
+    try { navigator.clipboard.writeText(code); } catch (e) { document.execCommand('copy'); }
+    this.textContent = 'Copied';
+  };
+  setTimeout(function () { location.href = open.href; }, 400);
+})();
+</script>
+</body>
+</html>

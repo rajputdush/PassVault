@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PassVault Privacy Policy</title>
+<style>
+body{font:16px/1.65 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:720px;margin:0 auto;padding:24px 16px 64px;color:#1b1d24;background:#fff}
+h1{font-size:1.8rem} h2{font-size:1.2rem;margin-top:2rem} a{color:#2f5bea}
+@media (prefers-color-scheme:dark){body{background:#14161c;color:#e7e9f0}a{color:#8fa8ff}}
+</style></head><body>
+<h1>PassVault Privacy Policy</h1>
+<p><strong>Effective date:</strong> 16 November 2026
+<strong>Developer:</strong> [YOUR NAME OR COMPANY]
+<strong>Contact:</strong> [YOUR CONTACT E-MAIL]</p>
+<p>PassVault is a password manager. This policy explains what happens to your information. The short version:
+<strong>your passwords are encrypted on your phone with a key that only your master password can unlock. We cannot read them, and we
+have no way to recover them if you lose both your master password and your recovery key.</strong></p>
+<h2>1. What stays on your phone</h2>
+<p>Everything you save (logins, notes, settings) is stored on your phone, encrypted with AES-256-GCM. The encryption key is
+protected by your master password (processed with Argon2id) and by your recovery key. Your master password and recovery key
+are never stored in readable form and are never sent anywhere.</p>
+<p>PassVault has no server and no account, so <strong>no personal data leaves your phone</strong>, with the one optional
+exception in section 3.</p>
+<h2>2. No account and no server</h2>
+<p>PassVault does not ask for an e-mail address or create an account, and there is no PassVault server. Your encrypted vault exists only on your phone and in backup files you choose to export.</p>
+
+<h2>3. Optional breach check</h2>
+<p>If you tap "Check for data breaches", the app checks your passwords against the Have I Been Pwned "Pwned Passwords" service
+(api.pwnedpasswords.com). For each password only the <strong>first 5 characters of its SHA-1 hash</strong> are sent; the full password and
+the full hash never leave your phone, and the service cannot tell which password you checked. This runs only when you tap the
+button.</p>
+<h2>3a. Optional website icons</h2>
+<p>By default each login shows a coloured badge with the site's initial, drawn on your phone; nothing is sent anywhere. If you turn on
+Settings -&gt; Appearance -&gt; "Show real website icons", the app requests each site's icon from DuckDuckGo's icon service
+(icons.duckduckgo.com) over HTTPS. Only the <strong>site's domain</strong> (for example amazon.com) is sent, never usernames, passwords or notes.
+Icons are cached on your phone and are deleted when you turn the switch off. DuckDuckGo may see your IP address and the domains
+requested, as with any web request. This is off unless you turn it on.</p>
+<h2>3b. Optional 2FA QR scanner</h2>
+<p>If you tap "Scan QR code" when adding a two-factor secret, the scan is done by Google's code scanner, which is part of Google Play
+services and runs outside PassVault. PassVault itself has no camera permission and never sees camera images; it only receives the
+text of the QR code you scanned. The 2FA secret is stored encrypted in your vault like every other field. You can also paste the
+setup key instead and never use the scanner.</p>
+<h2>3c. Optional sharing of one item</h2>
+<p>"Share securely" turns one item into an encrypted link or QR code. The item is encrypted on your phone with a passphrase you choose or PassVault generates, and the link itself holds the encrypted data. <strong>Nothing is uploaded to us or to any server.</strong> What you do with the link (a message app, a QR code on your screen) is up to you, and anyone who has both the link and the passphrase can read the item. PassVault keeps no list of what you shared and cannot take a link back.</p>
+<h2>4. Autofill, clipboard and screen</h2>
+<ul>
+<li><strong>Autofill:</strong> when you use PassVault as your Android autofill service, the app reads the structure of the screen you are
+  filling in (for example the website name and the position of login boxes) to find a matching login. This is processed on your
+  phone and is not sent anywhere.</li>
+<li><strong>Clipboard:</strong> copied passwords are marked as sensitive and cleared automatically after the time you choose.</li>
+<li><strong>Screenshots:</strong> screenshots and screen recording of the app are blocked by default.</li>
+<li><strong>Biometrics:</strong> fingerprint or face unlock is handled by Android. PassVault never receives your biometric data.</li>
+</ul>
+<h2>5. What we do not do</h2>
+<p>We do not use advertising, analytics or tracking software, we do not sell or share your data, and the app contains no
+third-party trackers.</p>
+<p>If the app crashes it saves a short report on your phone (app version, phone model, Android version and which part of the app failed, with no passwords, messages or vault contents). It is never sent automatically; you can share or delete it in Settings &rarr; About.</p>
+<h2>6. Backups and files you create</h2>
+<p>When you export a backup, the file is encrypted and is saved where you choose; keeping it safe is up to you. When you import a
+CSV file from another password manager, that file contains passwords in plain text. Delete it after importing.</p>
+<h2>7. Your choices and deleting your data</h2>
+<ul>
+<li><strong>Delete data on your phone:</strong> uninstall the app or clear its storage.</li>
+<li><strong>Questions or requests about your data:</strong> contact us at the address above.</li>
+</ul>
+<h2>8. Children</h2>
+<p>PassVault is not directed at children under 13 (or the minimum age in your country), and we do not knowingly collect their
+information.</p>
+<h2>9. Changes</h2>
+<p>If this policy changes, we will update the date at the top and, for significant changes, tell you in the app.</p>
+<h2>10. Contact</h2>
+<p>[YOUR CONTACT E-MAIL]</p>
+</body></html>
