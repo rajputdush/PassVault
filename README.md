@@ -1,140 +1,186 @@
-# PassVault (working name)
+# PassVault
 
-Offline-first Android password manager.
+PassVault is an offline Android password manager written in Kotlin with Jetpack Compose. Your vault is encrypted and stored only on your phone. There is no account, no server and no cloud sync.
 
-- **Step 1:** project setup, crypto core, onboarding (master password + recovery key).
-- **Step 2:** unlock screen, fingerprint unlock, auto-lock, vault list (add / edit / delete / search),
-  password generator, copy with auto-clearing clipboard.
-- **Step 3:** change master password, wrong-password lockout, settings screen,
-  encrypted backup export and restore.
-- **Security check (this version):** weak / reused / old password report, optional data-breach check.
-- **Cards and secure notes:** items now have a type (login, card, note). Cards check the number (Luhn) and expiry; notes are free text. Favourites, folders and filter chips organise the list.
-- **2FA codes:** paste a setup key or `otpauth://` link, or scan the QR code (Google Play services scanner, no camera permission). The live code, countdown and copy button are in the login, with a quick "2FA" button in the list.
-- **Passphrases:** the generator dialog offers passwords (length and character types) or passphrases from the 7,776-word EFF list.
-- **Apps:** logins can be linked to an Android package so autofill offers them directly inside that app; password change forms update the right login.
-- **Custom fields:** any item can carry extra labelled values (security question, account number, PIN), each optionally hidden.
-- **Fuzzy search:** typo-tolerant ("amzaon" finds Amazon, "gml" finds Gmail) with best matches first. Passwords and card numbers are never searched.
-- **Emergency Kit:** Settings -> Security -> "Replace your recovery key" creates a new recovery key (the old one stops working) and a printable one-page PDF. The PDF is also offered when you first set up the vault.
-- **Bitwarden import:** the unencrypted Bitwarden .json export brings logins, cards, secure notes, folders, favourites, 2FA codes, custom fields and Android-app logins. CSV from Chrome, Firefox, 1Password, LastPass and others still imports logins.
-- **Card expiry warnings:** the Security check lists cards that have expired or expire within two months.
-- **Several accounts on one site:** logins for the same site or app are grouped into one expandable entry ("Amazon, 3 accounts"), each account listed by username with an optional label such as Work. Possible duplicates are flagged. Turn grouping off in Settings, Appearance, Your list.
-- **Logos and linked apps:** typing a finished website address (like amazon.com) shows its logo once you pause, if real logos are on (the editor offers to turn them on). "Choose an app" lists the apps on your phone with search, and a login linked to an installed app shows that app's own icon.
-- **Cards:** add them inside PassVault. Autofill fills a saved card only when you pick it; cards are not saved from payment forms.
-- **Trash:** deleted items go to Trash (a "Trash" chip appears in the list) and can be restored for 30 days; then they are removed for good. Trashed items are never autofilled or counted in the security check.
-- **Password history:** each login keeps its last 5 passwords (shown, copied or put back from the editor). Sharing never includes the history.
-- **Leave any time:** Settings → Backup & import can export everything as plain JSON (Bitwarden format) or logins as CSV after re-entering the master password; 1Password `.1pux` files can be imported. Security check lists duplicate logins and cards and can move extra copies to Trash. Long-press the app icon or use the Quick Settings tile "Lock PassVault" to lock instantly.
-- **Languages:** Settings → Appearance → Language (System / English / हिन्दी). Screen text is translated through `ui/Strings.kt` and `ui/HindiStrings.kt`; anything without a translation stays in English. To add another language, add a map like `HindiStrings` and an entry in `AppLanguage`.
-- **Fingerprint check (optional):** Settings → Security can ask for your fingerprint before opening a login or card or copying a password, even while unlocked (valid 30 s). Autofill is not affected.
-- **Crash reports without tracking:** a crash saves a short local report (no messages, no vault data); you choose whether to share it from Settings → About. No analytics or network reporting.
-- **Tappable share links:** with `share.host` set (see docs/RELEASE.md) shared items are normal web links that WhatsApp makes tappable; the receiver also gets the link picked up from the clipboard.
-- **Site icons, optional name:** each login shows a brand-coloured badge (Amazon, Facebook, ...) computed offline; real favicons are an opt-in switch in Settings -> Appearance. The Name field is optional: the title is derived from the website.
-- **Redesign:** new colour theme, shared components, top bars with icons, cards, tidier forms.
+**[Download the latest APK from GitHub Releases](https://github.com/rajputdush/PassVault/releases/latest)**
 
-## Build and run (Ubuntu)
+## Key features
+
+**Vault**
+- Item types: logins, payment cards and secure notes.
+- Folders, favourites and filter chips. The list is sorted A to Z.
+- Typo-tolerant search ("amzaon" finds Amazon). Passwords and card numbers are never searched.
+- Several accounts on one site or app are grouped into one expandable entry, with an **Add another account** button that pre-fills the site. Grouping can be switched off in Settings.
+- Custom fields (for example a security question or PIN), each optionally hidden.
+- Password history: each login keeps its last 5 passwords.
+- Trash: deleted items stay for 30 days and can be restored. Trashed items are never autofilled.
+- Optional links from a login to an installed Android app, so autofill can offer it inside that app.
+- Brand-coloured badges for sites are generated offline. Real site logos are an opt-in setting (see [Privacy](#privacy-and-data-handling)).
+- English and Hindi interface (Settings, Appearance, Language). Text without a translation stays in English.
+
+**Passwords and 2FA**
+- Password generator: random passwords with chosen length and character types, or passphrases from the 7,776-word EFF list.
+- Built-in TOTP authenticator. Paste a setup key or `otpauth://` link, or scan a QR code. Live codes with a countdown and a copy button.
+- Security check: weak, reused and old passwords, duplicate logins and cards (extra copies can be moved to Trash), and cards that have expired or expire within two months.
+- Optional breach check (needs internet, see below).
+
+**Protection**
+- Master password plus a 256-bit recovery key, with a printable Emergency Kit PDF.
+- Fingerprint unlock (Android BIOMETRIC_STRONG).
+- Optional fingerprint check before opening an item or copying a password, even while unlocked (valid for 30 seconds).
+- Auto-lock after a time you choose and on screen-off. Lock instantly from the app, the Quick Settings tile "Lock PassVault" or the app-icon shortcut.
+- Clipboard marked as sensitive and cleared automatically after a time you choose.
+- Screenshots allowed by default; one switch blocks screenshots, screen recording and the recent-apps preview.
+- Encrypted activity log of unlocks, copies, autofill, deletes and restores (item titles only, never passwords or notes). Optional; the latest 500 events are kept.
+- Wrong-password lockout.
+
+**Data portability**
+- Encrypted backup and restore.
+- Import from Bitwarden, 1Password, Chrome, Firefox, LastPass and other tools.
+- Plain-text export (JSON or CSV) for moving to another manager.
+- Share a single item as a passphrase-protected code, link or QR code. No server is involved.
+
+**Autofill**
+- Android Autofill Framework service for logins in apps and browsers, with a "Save to PassVault?" prompt for new logins.
+
+## Security architecture
+
+All cryptographic code lives in the pure Kotlin/JVM `crypto` module so it can be unit-tested without a device.
+
+| Area | Implementation |
+|---|---|
+| Item encryption | AES-256-GCM with a fresh random 96-bit nonce per item. The item id is bound as associated data, so item files cannot be swapped. |
+| Vault key | 256 random bits. It is never derived from the password; it is stored twice in the vault header, wrapped once by the master-password key and once by the recovery-key key. |
+| Master password | NFKC-normalised, then **Argon2id** (64 MiB memory, 3 iterations, parallelism 1) via Argon2Kt. PBKDF2-HMAC-SHA256 with 600,000 iterations exists as a fallback. |
+| Key separation | HKDF-SHA256 with separate labels produces the password-wrap and recovery-wrap keys, so one master key is never used directly for two purposes. |
+| Changing the password | Only the wrapped vault key is re-wrapped; items are not re-encrypted. |
+| Recovery key | 256 random bits shown once as 13 groups of 4 Base32 characters. Replacing it makes the old key stop working immediately. |
+| Anti-downgrade | KDF parameters are stored in the header and checked against minimums every time it is read (Argon2id at least 19 MiB and 2 passes, PBKDF2 at least 210,000 rounds). A tampered header that weakens them is rejected. Shared-item codes bind their whole header as associated data and enforce the same minimums. |
+| Fingerprint unlock | The vault key is encrypted with an Android Keystore AES key that requires a fresh BIOMETRIC_STRONG authentication for every use and is invalidated when fingerprints change. |
+| Lockout | The first 4 wrong passwords are free; the 5th starts a 30 s wait, then 1 min, 5 min, 15 min, and 1 hour for every further mistake. The counter is persisted. The wait uses the phone's clock. |
+| Local protections | `allowBackup=false` plus data-extraction rules keep the vault out of Android cloud backups. The decrypted list is cleared from memory on lock. Release builds allow HTTPS only. |
+
+Independent review brief: [`docs/SECURITY.md`](docs/SECURITY.md). **This project has not had an independent security audit.** Treat it accordingly.
+
+## Privacy and data handling
+
+- Your vault is stored in the app's private storage on your phone. No account is needed and nothing is uploaded.
+- PassVault has no analytics, no ads and no tracking.
+- The app declares the `INTERNET` permission, and only two optional features use the network:
+  - **Breach check:** uses the Have I Been Pwned "Pwned Passwords" range API over HTTPS (`api.pwnedpasswords.com`). Only the first five characters of a password's SHA-1 hash are sent, with padding enabled; the match is made on your phone. Passwords themselves are never sent.
+  - **Real site logos (off by default):** when you turn this on, the domain of a saved site (for example `amazon.com`) is requested from DuckDuckGo's icon service (`icons.duckduckgo.com`) to show its logo. Leave it off to keep your list of sites on the phone.
+- Crash reports are saved only on the phone, without vault data. You decide whether to share one from Settings, About.
+- Privacy policy template: [`docs/PRIVACY_POLICY.md`](docs/PRIVACY_POLICY.md).
+
+## Technology stack
+
+- Kotlin 2.0.21, Jetpack Compose (BOM 2024.12.01), Material 3
+- Android: minSdk 26, targetSdk and compileSdk 35
+- Argon2Kt 1.5.0 (native Argon2id), AndroidX Biometric 1.1.0
+- Google Play services code scanner and ZXing core (QR scanning, no camera permission)
+- Gradle with a version catalog; JUnit 4 for tests
+
+## Download and installation
+
+1. Open the [latest release](https://github.com/rajputdush/PassVault/releases/latest) and download the APK from **Assets**.
+2. Open the file on your phone and allow "Install unknown apps" for your browser or file manager when asked.
+3. Create your vault: choose a master password (12 or more characters) and **save the recovery key**. It is shown only once.
+
+The APK is distributed through GitHub Releases. Updates are installed by downloading the newer APK from the same page; each release is signed with the same key.
+
+## Build from source (Ubuntu/Linux)
+
+Requirements: JDK 17 or newer, and the Android SDK with platform 35.
 
 ```bash
-./gradlew :crypto:test            # 72 JVM unit tests
-./gradlew :app:installDebug       # build and install on the connected phone/emulator
-~/Android/Sdk/platform-tools/adb shell am start -n com.ritvik.passvault/.MainActivity
+git clone https://github.com/rajputdush/PassVault.git
+cd PassVault
+echo "sdk.dir=$HOME/Android/Sdk" > local.properties
+
+./gradlew :crypto:test            # JVM unit tests
+./gradlew :app:installDebug       # build and install on a connected phone or emulator
+./gradlew :app:assembleRelease    # release APK (see docs/RELEASE.md for signing)
 ```
 
-Start from scratch (see onboarding again): `adb shell pm clear com.ritvik.passvault`
+The debug build is signed with Android's debug key; a release APK needs your own keystore (copy `keystore.properties.example` to `keystore.properties`). A phone cannot install a release build over a debug build, because the signing keys differ. Signing and release steps are in [`docs/RELEASE.md`](docs/RELEASE.md).
 
-Needs JDK 17+, the Android SDK with platform 35, and `local.properties` containing `sdk.dir=/path/to/Sdk`.
+Tests: the `crypto` module has 211 JVM unit tests (crypto, key handling, lockout, import, share codes, search, TOTP, autofill matching and more), and `app/src/androidTest` has 4 instrumented tests. Backup and restore, the settings screens and the Compose UI have no automated tests yet.
 
-## What to try (step 3)
+## Backup, restore and import
 
-1. **Settings** (top right of the list): choose the auto-lock time and clipboard-clear time.
-2. **Change master password**: lock and unlock with the new one; items are still there.
-3. **Check your recovery key**: type the saved key; it should say it is correct.
-4. **Wrong-password lockout**: type a wrong password 5 times on the lock screen; a 30-second wait starts
-   and grows with each further mistake. A correct password (or fingerprint) resets it.
-5. **Backup**: Settings > Export encrypted backup, save the .json file somewhere.
-6. **Restore**: run `adb shell pm clear com.ritvik.passvault`, then on the first screen tap
-   "Restore from backup" and pick that file. Unlock with the master password that was current when you
-   exported (or use "Forgot password? Use recovery key").
+**Encrypted backup**
+- Settings, Export, restore & import, then export an encrypted backup. The file holds the vault header and the item files exactly as stored, still encrypted. It can be kept in cloud storage or emailed to yourself.
+- To open a backup you need the master password that was current when the backup was made, or your recovery key. If you change the password later, make a new backup.
 
-## Layout
+**Restore**
+- On a fresh install, choose "Restore from backup" on the first screen and pick the file, then unlock with the password from backup time or use "Forgot password? Use recovery key".
+- Restore only works on a fresh install. It never overwrites an existing vault.
+
+**Import**
+- Settings, Import passwords. The format is detected from the file:
+
+| Source | File | Brought across |
+|---|---|---|
+| Bitwarden | Unencrypted `.json` export | Logins, cards, secure notes, folders, favourites, 2FA secrets, custom fields and Android-app logins. Identities are skipped. |
+| 1Password | `.1pux` export | Logins, cards and secure notes, with notes, 2FA secrets and extra fields. Items in 1Password's trash and other kinds (identities, bank accounts, licences) are skipped. |
+| Chrome, Edge, Brave, Firefox, LastPass, Bitwarden CSV and others | `.csv` with a "password" column | Logins only. Columns are recognised by header name. |
+
+- Rows without a password are skipped. Items already in the vault (same site, username and password; same card number; same note) are not added twice. Up to 5,000 items per file.
+- Import files are plain text. Delete them as soon as you have imported.
+
+**Plain-text export (leaving PassVault)**
+- After re-entering your master password, you can export everything as unprotected Bitwarden-style JSON, or logins only as CSV. These files hold your passwords unencrypted. Items in Trash are not included.
+
+**Share one item**
+- Share securely makes a code, link or QR code that only the right passphrase (at least 10 characters) can open. It works without a server. Anyone who has both the code and the passphrase can read the item, and a code cannot be taken back once sent. Password history is never included.
+
+## Android Autofill setup
+
+1. In PassVault: Settings, Autofill, Turn on autofill, then choose PassVault in Android's list.
+2. In Chrome, also enable Settings, Autofill services, "Autofill using another service".
+
+How it behaves:
+- **Vault locked:** tapping a login box shows "Unlock PassVault" (fingerprint or master password).
+- **Vault unlocked and the site matches:** the matching logins are offered directly. A match requires the saved website's registrable domain to equal the page's domain (`github.com.evil.com` and `notgithub.com` do not match `github.com`).
+- **Apps and unmatched sites:** "Choose from PassVault" opens a picker; a login is only filled into a place it was not saved for if you pick it yourself.
+- **Payment forms:** "Choose a card from PassVault" opens a card picker. Cards are never put in the drop-down, never filled without you tapping the card, and never saved from forms.
+- **Saving:** after you sign in somewhere, Android can offer "Save to PassVault?". If the vault is locked, an unlock screen opens first and the login is saved afterwards; the result is shown on screen. Existing logins whose password changed are updated.
+- If PassVault's own unlock screen is what unlocked the vault, it locks again when you leave that screen.
+- Fill the website field of a login for the best results.
+- Android does not tell apps which autofill entry you tap, so the activity log records "Autofill offered" for the drop-down and "Autofilled" when you pick from PassVault's own screen.
+
+## Project structure
 
 ```
-crypto/   Pure Kotlin/JVM, fully unit-tested without a device.
-  VaultCrypto    key hierarchy: master password -> wrap key -> vault key -> items
-  AesGcm, Hkdf, Kdf, RecoveryKey, PasswordPolicy, PasswordGenerator, AttemptLimiter
-app/
-  Argon2KeyDeriver      Argon2id via Argon2Kt (native)
-  VaultHeaderStore      atomic write of vault_header.json
-  VaultSession          unlocked vault key in memory (observable), wiped on lock
-  BiometricVault        Keystore key + encrypted vault key for fingerprint unlock
-  AppSettings           auto-lock and clipboard times; PrefsAttemptStore for the lockout counter
-  items/                VaultItem, ItemRepository (one encrypted file per item)
-  backup/               BackupCodec (header + encrypted item files in one JSON file)
-  onboarding/ unlock/ vault/ settings/   screens and view models
-  ClipboardHelper       sensitive copy + auto-clear
-  MainActivity          FLAG_SECURE, auto-lock, screen-off lock
+crypto/   Pure Kotlin/JVM module, unit-tested without a device
+  crypto/     AES-GCM, HKDF, KDF, VaultCrypto (key hierarchy), RecoveryKey, AttemptLimiter, password generator and audit
+  importer/   Bitwarden JSON, 1Password .1pux, CSV
+  share/      encrypted share codes
+  autofill/   domain and card-field matching
+  totp/ search/ sites/ cards/ export/ activity/ diagnostics/
+app/      Android application
+  autofill/   autofill service, auth and save screens
+  items/      VaultItem and the encrypted one-file-per-item repository
+  backup/     backup file format
+  onboarding/ unlock/ vault/ settings/ security/ share/ ui/   screens and view models
+  Argon2KeyDeriver, BiometricVault, VaultSession, VaultHeaderStore, AppSettings, ClipboardHelper, ActivityLog
+docs/     Security brief, privacy policy, release checklist, static share page
+store/    Play Store icon
 ```
-
-## Security design (summary)
-
-- The vault key is 256 random bits. Every item is encrypted with it (AES-256-GCM), with the item id
-  bound as associated data so files cannot be swapped between items.
-- The vault key is stored twice, wrapped by a key from the master password (Argon2id, 64 MiB, 3 passes)
-  and by a key from the recovery key. Changing the master password only re-wraps this one key.
-- KDF parameters are saved in the header and checked against minimums on load (no downgrade).
-- Wrong passwords: free for 4 tries, then 30 s, 1 min, 5 min, 15 min, 1 hour.
-- A backup is the header plus the items exactly as stored (still encrypted); it needs the master password
-  from backup time or the recovery key. No extra crypto was added for it.
-- Fingerprint unlock: the vault key is encrypted with a Keystore AES key that needs a fresh
-  BIOMETRIC_STRONG authentication for every use and is invalidated when fingerprints change.
-- No Android backups (`allowBackup=false` plus extraction rules); `FLAG_SECURE` blocks screenshots when you switch "Allow screenshots" off (it is on by default);
-  the decrypted item list is cleared from memory on lock.
-
-## Offline only
-
-PassVault has no server and no account. Your vault never leaves the phone except in a backup file you export yourself. To use it on another phone, export an encrypted backup (Settings -> Backup & import) and restore it on the new phone, or share single items with "Share securely".
-
-Settings is a menu: Security, Autofill, Backup & import, Appearance, About.
-
-## Autofill
-
-- Settings -> Autofill -> "Turn on autofill", then choose PassVault in Android's list. In Chrome also switch on
-  Settings -> Autofill services -> "Autofill using another service".
-- Tap a username/password box in another app or site: vault locked -> "Unlock PassVault" (fingerprint or master
-  password, then pick a login); unlocked and the site matches a saved login -> that login is offered directly;
-  otherwise "Choose from PassVault" (you pick the login yourself).
-- Phishing protection: a login is only offered automatically for a site whose registrable domain equals the one
-  saved in the item's "website" field (github.com.evil.com and notgithub.com do not match). Apps and unknown
-  sites always need you to pick the login on the PassVault screen. Fill the item's website field for best results.
-- After you sign in somewhere, Android offers "Save to PassVault?" (only while the vault is unlocked).
-- If PassVault's unlock screen is what unlocked the vault, it locks again when you leave that screen.
-
-## Import from other password managers
-
-- Settings -> "Import passwords" -> choose the CSV file exported from Chrome/Edge/Brave, Firefox, Bitwarden,
-  1Password, LastPass or any tool whose CSV has a "password" column (columns are recognised by header name).
-- Notes, cards and identities from Bitwarden are skipped (logins only); rows without a password are skipped;
-  logins already in the vault (same site, username, password) are not added twice; max 5000 rows per file.
-- The CSV is plain text. Delete it (and empty the trash / downloads) right after importing.
-
-## Release
-
-See `docs/RELEASE.md` (signing, building the app bundle, Play Console), `docs/PRIVACY_POLICY.md` (fill in the
-placeholders), and `docs/SECURITY.md` (brief for an independent reviewer). Icon: adaptive vector icon in `res/`;
-512 px Play Store icon in `store/`.
 
 ## Known limitations
 
-- Autofill depends on each app/browser supporting Android's autofill framework; some apps and custom fields
-  are not detected. Saving a login only works while the vault is unlocked.
+- Autofill depends on each app and browser supporting Android's autofill framework; some apps and custom fields are not detected. Saving a login needs the vault to be unlocked, or to be unlocked from the save prompt.
+- Kotlin `String` values cannot be wiped, so decrypted passwords stay in memory until garbage collected.
+- The lockout uses the phone's clock, so someone who can change the date could shorten a wait. The wait is capped at 1 hour.
+- A backup opens with the master password that was current when it was made.
+- Restore only works on a fresh install.
+- Imports of CSV files bring logins only. There is no encrypted export to other managers; the plain-text exports are unprotected.
+- The password-strength check is an estimate, not a dictionary check. The breach check needs internet.
+- Passkeys are not supported. 2FA codes are copied, not filled automatically.
+- Malware with accessibility or screen access, or a rooted phone, can read what is shown while the vault is unlocked.
+- No independent security review has been done yet.
 
-- Kotlin `String` cannot be wiped, so decrypted passwords live in memory until garbage collected.
-- The lockout uses the phone's clock, so someone who can change the date could shorten a wait
-  (the wait is capped at 1 hour so a wrong date can never lock the owner out for long).
-- A backup opens with the master password that was current when it was made. If you change the
-  password later, export a new backup.
-- Restore only works on a fresh install (it never overwrites an existing vault).
-- Backup, restore, settings and the Android UI have no automated tests yet; only the `crypto` module does
-  (198 tests).
-- Import is login-only (no cards, identities or attachments), and there is no export to other managers.
-- The strength check is an estimate, not a dictionary-based one; the breach check needs internet and is
-  the only feature that uses the network (HTTPS to api.pwnedpasswords.com, 5-character hash prefixes only).
-- Get an independent security review before releasing to real users.
+## Security reporting
+
+Please report vulnerabilities privately, not in a public issue: use the **Report a vulnerability** option under the repository's **Security** tab on GitHub. Include steps to reproduce and the app version. Do not include real passwords or vault files.
