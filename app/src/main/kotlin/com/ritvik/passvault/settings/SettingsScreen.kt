@@ -786,7 +786,14 @@ private fun RecoveryKeyPage(
                     modifier = Modifier.padding(16.dp),
                 )
             }
-            SecondaryButton(text = "Save Emergency Kit (PDF)", onClick = onSaveKit, modifier = Modifier.fillMaxWidth())
+            var kitWarning by remember { mutableStateOf(false) }
+            if (kitWarning) {
+                com.ritvik.passvault.ui.EmergencyKitWarningDialog(
+                    onContinue = { kitWarning = false; onSaveKit() },
+                    onDismiss = { kitWarning = false },
+                )
+            }
+            SecondaryButton(text = "Save Emergency Kit (PDF)", onClick = { kitWarning = true }, modifier = Modifier.fillMaxWidth())
             Hint("Print it, then delete the PDF.")
             Row(verticalAlignment = Alignment.CenterVertically) {
                 androidx.compose.material3.Checkbox(checked = keySaved, onCheckedChange = { keySaved = it })

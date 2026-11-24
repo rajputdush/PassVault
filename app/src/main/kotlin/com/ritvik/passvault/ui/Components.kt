@@ -346,3 +346,24 @@ fun IconBadge(icon: androidx.compose.ui.graphics.vector.ImageVector, tint: Color
         androidx.compose.material3.Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(size * 0.52f))
     }
 }
+
+/**
+ * Shown before the Emergency Kit PDF is saved. The PDF holds the recovery key in plain text, and apps with storage
+ * access or cloud-sync tools (Drive, Dropbox, WhatsApp backup) could copy it from Downloads or Documents.
+ */
+@androidx.compose.runtime.Composable
+fun EmergencyKitWarningDialog(onContinue: () -> Unit, onDismiss: () -> Unit) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("This file holds your recovery key") },
+        text = {
+            Text(
+                "Anyone who gets this PDF can open your vault. If you save it to Downloads or Documents, other apps or a " +
+                    "cloud-sync app (Google Drive, Dropbox, WhatsApp backup) may copy it. Print it right away, then delete the " +
+                    "file from your phone and from anywhere it was copied to.",
+            )
+        },
+        confirmButton = { androidx.compose.material3.TextButton(onClick = onContinue) { Text("I understand, save it") } },
+        dismissButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}

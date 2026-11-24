@@ -25,12 +25,12 @@ PassVault is an offline Android password manager written in Kotlin with Jetpack 
 - Optional breach check (needs internet, see below).
 
 **Protection**
-- Master password plus a 256-bit recovery key, with a printable Emergency Kit PDF.
+- Master password plus a 256-bit recovery key, with a printable Emergency Kit PDF (a warning is shown before it is saved, because the file holds the recovery key in plain text).
 - Fingerprint unlock (Android BIOMETRIC_STRONG).
 - Optional fingerprint check before opening an item or copying a password, even while unlocked (valid for 30 seconds).
 - Auto-lock after a time you choose and on screen-off. Lock instantly from the app, the Quick Settings tile "Lock PassVault" or the app-icon shortcut.
 - Clipboard marked as sensitive and cleared automatically after a time you choose.
-- Screenshots allowed by default; one switch blocks screenshots, screen recording and the recent-apps preview.
+- Screenshots, screen recording and the recent-apps preview are blocked by default; a switch in Settings allows them.
 - Encrypted activity log of unlocks, copies, autofill, deletes and restores (item titles only, never passwords or notes). Optional; the latest 500 events are kept.
 - Wrong-password lockout.
 
@@ -57,7 +57,7 @@ All cryptographic code lives in the pure Kotlin/JVM `crypto` module so it can be
 | Recovery key | 256 random bits shown once as 13 groups of 4 Base32 characters. Replacing it makes the old key stop working immediately. |
 | Anti-downgrade | KDF parameters are stored in the header and checked against minimums every time it is read (Argon2id at least 19 MiB and 2 passes, PBKDF2 at least 210,000 rounds). A tampered header that weakens them is rejected. Shared-item codes bind their whole header as associated data and enforce the same minimums. |
 | Fingerprint unlock | The vault key is encrypted with an Android Keystore AES key that requires a fresh BIOMETRIC_STRONG authentication for every use and is invalidated when fingerprints change. |
-| Lockout | The first 4 wrong passwords are free; the 5th starts a 30 s wait, then 1 min, 5 min, 15 min, and 1 hour for every further mistake. The counter is persisted. The wait uses the phone's clock. |
+| Lockout | The first 4 wrong passwords are free; the 5th starts a 30 s wait, then 1 min, 5 min, 15 min, and 1 hour for every further mistake. The counter is persisted. The wait is timed with the monotonic clock, so changing the phone's date does not shorten it; a reboot restarts the wait in full. |
 | Local protections | `allowBackup=false` plus data-extraction rules keep the vault out of Android cloud backups. The decrypted list is cleared from memory on lock. Release builds allow HTTPS only. |
 
 Independent review brief: [`docs/SECURITY.md`](docs/SECURITY.md). **This project has not had an independent security audit.** Treat it accordingly.
@@ -104,7 +104,7 @@ echo "sdk.dir=$HOME/Android/Sdk" > local.properties
 
 The debug build is signed with Android's debug key; a release APK needs your own keystore (copy `keystore.properties.example` to `keystore.properties`). A phone cannot install a release build over a debug build, because the signing keys differ. Signing and release steps are in [`docs/RELEASE.md`](docs/RELEASE.md).
 
-Tests: the `crypto` module has 211 JVM unit tests (crypto, key handling, lockout, import, share codes, search, TOTP, autofill matching and more), and `app/src/androidTest` has 4 instrumented tests. Backup and restore, the settings screens and the Compose UI have no automated tests yet.
+Tests: the `crypto` module has 216 JVM unit tests (crypto, key handling, lockout, import, share codes, search, TOTP, autofill matching and more), and `app/src/androidTest` has 4 instrumented tests. Backup and restore, the settings screens and the Compose UI have no automated tests yet.
 
 ## Backup, restore and import
 
@@ -132,7 +132,7 @@ Tests: the `crypto` module has 211 JVM unit tests (crypto, key handling, lockout
 - After re-entering your master password, you can export everything as unprotected Bitwarden-style JSON, or logins only as CSV. These files hold your passwords unencrypted. Items in Trash are not included.
 
 **Share one item**
-- Share securely makes a code, link or QR code that only the right passphrase (at least 10 characters) can open. It works without a server. Anyone who has both the code and the passphrase can read the item, and a code cannot be taken back once sent. Password history is never included.
+- Share securely makes a code, link or QR code that only the right passphrase (at least 16 characters; a generated five-word passphrase is suggested) can open. It works without a server. Anyone who has both the code and the passphrase can read the item, and a code cannot be taken back once sent. Password history is never included.
 
 ## Android Autofill setup
 
@@ -141,7 +141,7 @@ Tests: the `crypto` module has 211 JVM unit tests (crypto, key handling, lockout
 
 How it behaves:
 - **Vault locked:** tapping a login box shows "Unlock PassVault" (fingerprint or master password).
-- **Vault unlocked and the site matches:** the matching logins are offered directly. A match requires the saved website's registrable domain to equal the page's domain (`github.com.evil.com` and `notgithub.com` do not match `github.com`).
+- **Vault unlocked and the site matches:** the matching logins are offered directly. A match requires the saved website's registrable domain, worked out with the Mozilla Public Suffix List, to equal the page's domain (`github.com.evil.com` and `notgithub.com` do not match `github.com`, and two customers of the same host such as `a.github.io` and `b.github.io` never match each other).
 - **Apps and unmatched sites:** "Choose from PassVault" opens a picker; a login is only filled into a place it was not saved for if you pick it yourself.
 - **Payment forms:** "Choose a card from PassVault" opens a card picker. Cards are never put in the drop-down, never filled without you tapping the card, and never saved from forms.
 - **Saving:** after you sign in somewhere, Android can offer "Save to PassVault?". If the vault is locked, an unlock screen opens first and the login is saved afterwards; the result is shown on screen. Existing logins whose password changed are updated.
@@ -172,7 +172,7 @@ store/    Play Store icon
 
 - Autofill depends on each app and browser supporting Android's autofill framework; some apps and custom fields are not detected. Saving a login needs the vault to be unlocked, or to be unlocked from the save prompt.
 - Kotlin `String` values cannot be wiped, so decrypted passwords stay in memory until garbage collected.
-- The lockout uses the phone's clock, so someone who can change the date could shorten a wait. The wait is capped at 1 hour.
+- The lockout counter lives in the app's private storage, so someone with root access can reset it. The wait is capped at 1 hour.
 - A backup opens with the master password that was current when it was made.
 - Restore only works on a fresh install.
 - Imports of CSV files bring logins only. There is no encrypted export to other managers; the plain-text exports are unprotected.

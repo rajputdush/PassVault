@@ -90,9 +90,9 @@ class AppSettings(context: Context) {
             prefs.edit().putBoolean(KEY_TOUR_SEEN, value).apply()
         }
 
-    private val _allowScreenshots = MutableStateFlow(prefs.getBoolean(KEY_ALLOW_SCREENSHOTS, true))
+    private val _allowScreenshots = MutableStateFlow(prefs.getBoolean(KEY_ALLOW_SCREENSHOTS, false))
 
-    /** Whether screenshots and screen recording are allowed inside PassVault. On by default; the user can switch it off. */
+    /** Whether screenshots and screen recording are allowed inside PassVault. Off by default (screens are protected); the user can switch it on. */
     val allowScreenshots: StateFlow<Boolean> = _allowScreenshots.asStateFlow()
 
     fun setAllowScreenshots(on: Boolean) {
@@ -136,5 +136,23 @@ class PrefsAttemptStore(context: Context) : AttemptStore {
         get() = prefs.getLong("locked_until_ms", 0L)
         set(value) {
             prefs.edit().putLong("locked_until_ms", value).commit()
+        }
+
+    override var lockDelayMs: Long
+        get() = prefs.getLong("lock_delay_ms", 0L)
+        set(value) {
+            prefs.edit().putLong("lock_delay_ms", value).commit()
+        }
+
+    override var lockStartElapsedMs: Long
+        get() = prefs.getLong("lock_start_elapsed_ms", 0L)
+        set(value) {
+            prefs.edit().putLong("lock_start_elapsed_ms", value).commit()
+        }
+
+    override var lockBootId: Int
+        get() = prefs.getInt("lock_boot_id", 0)
+        set(value) {
+            prefs.edit().putInt("lock_boot_id", value).commit()
         }
 }

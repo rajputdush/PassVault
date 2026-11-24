@@ -67,7 +67,7 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         container = (application as PassVaultApp).container
 
-        // Screenshots are allowed by default. When the user switches them off in Settings, screenshots, screen
+        // Screenshots are blocked by default. When the user switches them on in Settings, screenshots, screen
         // recording and the recents-screen thumbnail are blocked, and the change applies at once.
         window.applyScreenshotPolicy(container.settings.allowScreenshots.value)
         lifecycleScope.launch {

@@ -114,6 +114,10 @@ fun ShareItemDialog(container: AppContainer, item: VaultItem, onDismiss: () -> U
                     TextButton(onClick = { passphrase = ShareCodec.generatePassphrase() }, enabled = !working) {
                         Text("Make a new passphrase")
                     }
+                    Text(
+                        "At least 16 characters. The suggested five-word passphrase is the safest choice: anyone who sees the link can try to guess a weaker one offline.",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
                     Text("Link works for", style = MaterialTheme.typography.labelLarge)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         VALIDITIES.forEachIndexed { i, v ->

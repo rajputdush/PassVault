@@ -31,7 +31,18 @@ class AppContainer(context: Context) {
     val itemRepository = ItemRepository(File(context.filesDir, "items"), vaultCrypto)
     val biometricVault = BiometricVault(context.applicationContext)
     val settings = AppSettings(context.applicationContext)
-    val attemptLimiter = AttemptLimiter(PrefsAttemptStore(context.applicationContext))
+    val attemptLimiter = AttemptLimiter(
+        PrefsAttemptStore(context.applicationContext),
+        elapsed = { android.os.SystemClock.elapsedRealtime() },
+        // Settings.Global.BOOT_COUNT changes at every restart; the monotonic clock starts from zero again then.
+        bootId = {
+            try {
+                android.provider.Settings.Global.getInt(context.applicationContext.contentResolver, "boot_count", 0)
+            } catch (e: Exception) {
+                0
+            }
+        },
+    )
     val session = VaultSession()
 
     val icons = com.ritvik.passvault.sites.IconLoader(context.applicationContext, settings)

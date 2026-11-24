@@ -72,7 +72,7 @@ class ShareException(message: String, val reason: Reason) : Exception(message) {
 object ShareCodec {
     const val PREFIX = "PVS1."
     const val LINK_PREFIX = "passvault://share/"
-    const val MIN_PASSPHRASE_LENGTH = 10
+    const val MIN_PASSPHRASE_LENGTH = 16
     /** A QR code with more characters than this is too dense to scan reliably from a phone screen. */
     const val QR_MAX_CHARS = 1000
 

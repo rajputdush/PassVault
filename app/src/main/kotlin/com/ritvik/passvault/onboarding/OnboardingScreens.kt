@@ -144,6 +144,7 @@ fun RecoveryKeyScreen(
     onSaved: () -> Unit,
 ) {
     var confirmed by remember { mutableStateOf(false) }
+    var kitWarning by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val kitLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
         if (uri != null) {
@@ -160,6 +161,13 @@ fun RecoveryKeyScreen(
                 Toast.LENGTH_LONG,
             ).show()
         }
+    }
+
+    if (kitWarning) {
+        com.ritvik.passvault.ui.EmergencyKitWarningDialog(
+            onContinue = { kitWarning = false; kitLauncher.launch("passvault-emergency-kit.pdf") },
+            onDismiss = { kitWarning = false },
+        )
     }
 
     ScreenColumn {
@@ -185,7 +193,7 @@ fun RecoveryKeyScreen(
 
         SecondaryButton(
             text = "Save printable Emergency Kit (PDF)",
-            onClick = { kitLauncher.launch("passvault-emergency-kit.pdf") },
+            onClick = { kitWarning = true },
             modifier = Modifier.fillMaxWidth(),
         )
 

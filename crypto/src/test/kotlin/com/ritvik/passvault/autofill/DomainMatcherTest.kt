@@ -60,4 +60,21 @@ class DomainMatcherTest {
         assertFalse(DomainMatcher.matches("192.168.1.5", "10.168.1.5"))
         assertFalse(DomainMatcher.matches("1.5", "9.1.5"))
     }
+
+    @Test
+    fun publicSuffixListKeepsDifferentOwnersApart() {
+        assertEquals("victim.co.za", DomainMatcher.registrable("foo.victim.co.za"))
+        assertEquals("attacker.co.za", DomainMatcher.registrable("attacker.co.za"))
+        assertTrue(!DomainMatcher.matches("tenanta.cloudapp.net", "tenantb.cloudapp.net"))
+        assertTrue(!DomainMatcher.matches("mybucket.s3-website.eu-west-1.amazonaws.com", "other.s3-website.eu-west-1.amazonaws.com"))
+        assertTrue(!DomainMatcher.matches("a.github.io", "b.github.io"))
+        assertTrue(!DomainMatcher.matches("school.edu.ng", "other.edu.ng"))
+    }
+
+    @Test
+    fun sameOwnerStillMatchesAcrossSubdomains() {
+        assertTrue(DomainMatcher.matches("example.co.za", "login.example.co.za"))
+        assertTrue(DomainMatcher.matches("https://www.amazon.in/signin", "smile.amazon.in"))
+        assertEquals("example.com", DomainMatcher.registrable("a.b.example.com"))
+    }
 }

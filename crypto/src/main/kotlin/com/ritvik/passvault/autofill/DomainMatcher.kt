@@ -5,20 +5,27 @@ package com.ritvik.passvault.autofill
  * offered to the real site and never to a look-alike ("github.com.evil.com" or "notgithub.com").
  *
  * Two addresses match when they share the same registrable domain (example.com matches login.example.com).
- * This uses a short built-in list of two-part public suffixes (co.uk, com.au ...) and shared-hosting domains
- * (github.io, vercel.app ...) instead of the full Public Suffix List; unknown ones fall back to "last two labels".
+ * "Registrable domain" comes from the Mozilla Public Suffix List (compiled into the app, see [PublicSuffixData]), so
+ * multi-part endings (co.uk, co.za, edu.ng) and shared hosting (github.io, cloudapp.net, s3.amazonaws.com ...) are handled:
+ * two customers of the same hosting service never match each other.
  */
 object DomainMatcher {
-    private val TWO_PART_SUFFIXES = setOf(
-        "co.uk", "org.uk", "ac.uk", "gov.uk", "me.uk", "com.au", "net.au", "org.au", "edu.au", "gov.au",
-        "co.in", "net.in", "org.in", "ac.in", "gov.in", "edu.in", "co.jp", "ne.jp", "or.jp", "ac.jp",
-        "com.br", "net.br", "org.br", "com.cn", "net.cn", "org.cn", "com.mx", "co.nz", "co.za", "com.sg",
-        "com.tr", "com.ar", "co.kr", "com.hk", "com.tw", "co.id", "com.my", "com.ph", "com.pk", "com.bd",
-        // Shared hosting: every customer is a different owner, so these behave like public suffixes.
-        "github.io", "gitlab.io", "blogspot.com", "herokuapp.com", "vercel.app", "netlify.app", "pages.dev",
-        "web.app", "firebaseapp.com", "azurewebsites.net", "appspot.com", "workers.dev", "onrender.com",
-        "wordpress.com", "myshopify.com", "s3.amazonaws.com", "cloudfront.net",
-    )
+    private val plainRules = HashSet<String>()
+    private val wildcardRules = HashSet<String>() // stored without the leading "*."
+    private val exceptionRules = HashSet<String>() // stored without the leading "!"
+
+    init {
+        for (chunk in PublicSuffixData.CHUNKS) {
+            for (rule in chunk.split(' ')) {
+                when {
+                    rule.isEmpty() -> Unit
+                    rule.startsWith("!") -> exceptionRules.add(rule.substring(1))
+                    rule.startsWith("*.") -> wildcardRules.add(rule.substring(2))
+                    else -> plainRules.add(rule)
+                }
+            }
+        }
+    }
 
     /** [savedUrl] is what the user typed for the login (may lack a scheme); [webDomain] is what the browser reports. */
     fun matches(savedUrl: String, webDomain: String?): Boolean {
@@ -43,12 +50,31 @@ object DomainMatcher {
         return s
     }
 
+    /**
+     * The part of [host] a single owner can register: the public suffix plus one more label
+     * ("login.example.co.uk" gives "example.co.uk", "a.github.io" gives "a.github.io").
+     */
     fun registrable(host: String): String {
         val labels = host.split('.')
-        if (labels.size <= 2) return host
-        val lastTwo = labels.takeLast(2).joinToString(".")
-        val take = if (lastTwo in TWO_PART_SUFFIXES) 3 else 2
-        return labels.takeLast(take).joinToString(".")
+        if (labels.size <= 1) return host
+        var suffixLabels = 1 // the default rule: every top-level domain is a public suffix
+        for (i in labels.indices) {
+            val candidate = labels.subList(i, labels.size).joinToString(".")
+            if (candidate in exceptionRules) {
+                suffixLabels = labels.size - i - 1
+                break
+            }
+            if (candidate in plainRules) {
+                suffixLabels = labels.size - i
+                break
+            }
+            if (i + 1 < labels.size && labels.subList(i + 1, labels.size).joinToString(".") in wildcardRules) {
+                suffixLabels = labels.size - i
+                break
+            }
+        }
+        val take = suffixLabels + 1
+        return if (labels.size <= take) host else labels.takeLast(take).joinToString(".")
     }
 
     private fun isIp(host: String) = host.all { it.isDigit() || it == '.' } && host.contains('.')

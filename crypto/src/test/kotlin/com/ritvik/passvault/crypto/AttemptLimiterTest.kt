@@ -8,11 +8,16 @@ class AttemptLimiterTest {
     private class FakeStore : AttemptStore {
         override var failures = 0
         override var lockedUntilMs = 0L
+        override var lockDelayMs = 0L
+        override var lockStartElapsedMs = 0L
+        override var lockBootId = 0
     }
 
     private var clock = 1_000_000L
+    private var mono = 5_000L
+    private var boot = 1
     private val store = FakeStore()
-    private val limiter = AttemptLimiter(store) { clock }
+    private val limiter = AttemptLimiter(store, { clock }, { mono }, { boot })
 
     @Test
     fun firstFourFailuresAreFree() {
@@ -37,9 +42,9 @@ class AttemptLimiterTest {
     @Test
     fun lockExpiresAsTimePasses() {
         repeat(5) { limiter.recordFailure() }
-        clock += 10_000
+        mono += 10_000
         assertEquals(20_000L, limiter.remainingLockMs())
-        clock += 20_000
+        mono += 20_000
         assertEquals(0L, limiter.remainingLockMs())
     }
 
@@ -55,7 +60,7 @@ class AttemptLimiterTest {
     @Test
     fun stateSurvivesANewLimiterOnTheSameStore() {
         repeat(5) { limiter.recordFailure() }
-        val restarted = AttemptLimiter(store) { clock }
+        val restarted = AttemptLimiter(store, { clock }, { mono }, { boot })
         assertEquals(30_000L, restarted.remainingLockMs())
     }
 
@@ -64,6 +69,32 @@ class AttemptLimiterTest {
         repeat(9) { limiter.recordFailure() }
         clock -= 365L * 24 * 60 * 60_000 // user (or thief) sets the date back a year
         assertTrue(limiter.remainingLockMs() <= AttemptLimiter.MAX_DELAY_MS)
+    }
+
+    @Test
+    fun settingTheDateForwardDoesNotShortenTheWait() {
+        repeat(5) { limiter.recordFailure() }
+        clock += 24L * 60 * 60_000 // thief moves the date a day ahead
+        assertEquals(30_000L, limiter.remainingLockMs())
+    }
+
+    @Test
+    fun rebootRestartsTheWaitInsteadOfShorteningIt() {
+        repeat(6) { limiter.recordFailure() } // 1 minute wait
+        mono += 40_000
+        boot = 2
+        mono = 1_000 // monotonic clock starts again after the reboot
+        clock += 24L * 60 * 60_000 // and the date is moved forward as well
+        assertEquals(60_000L, limiter.remainingLockMs())
+        mono += 15_000
+        assertEquals(45_000L, limiter.remainingLockMs())
+    }
+
+    @Test
+    fun waitRecordedByAnOlderVersionStillWorks() {
+        store.failures = 5
+        store.lockedUntilMs = clock + 30_000L // no monotonic data stored
+        assertEquals(30_000L, limiter.remainingLockMs())
     }
 
     @Test

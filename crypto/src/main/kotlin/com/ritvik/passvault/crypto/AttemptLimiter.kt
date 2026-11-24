@@ -1,9 +1,15 @@
 package com.ritvik.passvault.crypto
 
-/** Where the failure count and lock-out time are kept between app launches. */
+/** Where the failure count and lock-out state are kept between app launches. */
 interface AttemptStore {
     var failures: Int
+    /** Wall-clock end of the wait. Only used for waits recorded by older versions. */
     var lockedUntilMs: Long
+    /** Length of the current wait, and where the monotonic clock stood when it started or was restarted. */
+    var lockDelayMs: Long
+    var lockStartElapsedMs: Long
+    /** Which device start the monotonic clock values belong to (it restarts from zero at every reboot). */
+    var lockBootId: Int
 }
 
 /**
@@ -13,17 +19,32 @@ interface AttemptStore {
  *
  * The count resets after a successful unlock. Argon2id already makes each guess cost about a second;
  * this limit stops a thief from trying thousands of guesses on the phone itself.
- * Limitation: it uses the wall clock, so a thief who can change the phone's date could shorten a wait.
- * The remaining wait is capped at one hour so that setting the clock far back cannot lock the owner out for years.
+ *
+ * The wait is measured with the monotonic clock ([elapsed], SystemClock.elapsedRealtime on Android), which changing
+ * the phone's date does not affect. That clock restarts at a reboot; when [bootId] shows the phone restarted, the
+ * wait starts over in full, so rebooting never shortens it. The wait is never longer than one hour.
  */
 class AttemptLimiter(
     private val store: AttemptStore,
     private val now: () -> Long = { System.currentTimeMillis() },
+    private val elapsed: () -> Long = { System.nanoTime() / 1_000_000L },
+    private val bootId: () -> Int = { 0 },
 ) {
     /** Milliseconds the user must still wait, or 0 if an attempt is allowed. */
     fun remainingLockMs(): Long {
-        val remaining = store.lockedUntilMs - now()
-        return remaining.coerceIn(0L, MAX_DELAY_MS)
+        val delay = store.lockDelayMs
+        if (delay <= 0L) {
+            // A wait recorded by an older version of the app, measured on the wall clock.
+            return (store.lockedUntilMs - now()).coerceIn(0L, MAX_DELAY_MS)
+        }
+        val e = elapsed()
+        if (store.lockBootId != bootId() || e < store.lockStartElapsedMs) {
+            // The phone restarted since the wait began, so the monotonic clock cannot say how much passed.
+            // Start the wait again in full rather than trusting the (changeable) wall clock.
+            store.lockBootId = bootId()
+            store.lockStartElapsedMs = e
+        }
+        return (delay - (e - store.lockStartElapsedMs)).coerceIn(0L, MAX_DELAY_MS)
     }
 
     /** Records a wrong password and returns the wait (in ms) that now applies, 0 if none. */
@@ -32,12 +53,16 @@ class AttemptLimiter(
         val delay = delayAfterFailures(failures)
         store.failures = failures
         store.lockedUntilMs = if (delay > 0) now() + delay else 0L
+        store.lockDelayMs = delay
+        store.lockStartElapsedMs = elapsed()
+        store.lockBootId = bootId()
         return delay
     }
 
     fun recordSuccess() {
         store.failures = 0
         store.lockedUntilMs = 0L
+        store.lockDelayMs = 0L
     }
 
     companion object {

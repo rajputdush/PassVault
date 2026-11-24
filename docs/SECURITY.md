@@ -21,7 +21,7 @@ A password manager must be reviewed by someone independent before real users tru
 ## Known limitations (be honest with the reviewer)
 
 - Kotlin/JVM `String` cannot be wiped, so decrypted fields live in memory until garbage collected.
-- Lockout timing uses the phone's clock.
+- Lockout timing uses the monotonic clock (not the wall clock); after a reboot the wait restarts in full. Stored counters can still be reset by someone with root.
 - A rooted phone or malware with accessibility/screen access while the vault is unlocked can read what is on screen.
 - Domain matching uses a short built-in list of public suffixes, not the full Public Suffix List.
 - No certificate pinning (standard HTTPS validation only).
@@ -72,7 +72,7 @@ Code: `crypto/.../share/ShareCodec.kt` (23 tests). A shared item is `PVS1.` + ba
 - Header: version, KDF id, memory, iterations, parallelism, 16-byte random salt. The whole header is authenticated as AES-GCM associated data, so lowering the key-derivation cost inside a code makes it fail to open.
 - Key: Argon2id (64 MiB, 3 passes; PBKDF2 accepted) from a passphrase (NFKC, trimmed, lower-cased), then HKDF with the separate label `passvault/v1/hkdf/share`. The passphrase is never part of the code. Generated passphrases are five EFF words (about 65 bits).
 - Payload: gzip(JSON of the item + created/expires times), AES-256-GCM. Decompression is capped at 200 KB, and a code asking for more than 256 MiB or 16 Argon2 passes is refused before any work is done. Opening enforces the same minimum KDF strength as the vault.
-- Limits to tell the reviewer: anyone with the code and the passphrase can read it; a code cannot be revoked; the expiry is enforced by the receiving app, so it guards against stale messages, not against a modified client. Offline guessing of a short, user-chosen passphrase is possible (the app requires at least 10 characters and offers a generated one).
+- Limits to tell the reviewer: anyone with the code and the passphrase can read it; a code cannot be revoked; the expiry is enforced by the receiving app, so it guards against stale messages, not against a modified client. Offline guessing of a short, user-chosen passphrase is possible (the app requires at least 16 characters and offers a generated five-word one).
 - Delivery: a `passvault://share/...` deep link (opens only a dialog asking for the passphrase and confirmation; nothing is saved automatically), a QR code (ZXing core, drawn on screen, no camera permission to show it), or pasted text. The dialogs set FLAG_SECURE on their own windows.
 
 ## Card autofill
