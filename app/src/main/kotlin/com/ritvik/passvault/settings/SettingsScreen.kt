@@ -699,6 +699,7 @@ private fun MasterPasswordPage(
             secret = true,
             revealed = showPasswords,
             enabled = !state.working,
+            trailing = @Composable { com.ritvik.passvault.ui.RevealToggle(showPasswords) { showPasswords = !showPasswords } },
         )
         AppTextField(
             value = newPassword,
@@ -707,9 +708,7 @@ private fun MasterPasswordPage(
             secret = true,
             revealed = showPasswords,
             enabled = !state.working,
-            trailing = @Composable {
-                TextButton(onClick = { showPasswords = !showPasswords }) { Text(if (showPasswords) "Hide" else "Show") }
-            },
+            trailing = @Composable { com.ritvik.passvault.ui.RevealToggle(showPasswords) { showPasswords = !showPasswords } },
         )
         com.ritvik.passvault.ui.PasswordStrengthBar(newPassword)
         AppTextField(
@@ -721,6 +720,7 @@ private fun MasterPasswordPage(
             enabled = !state.working,
             imeAction = ImeAction.Done,
             onImeAction = { onChangePassword(currentPassword, newPassword, confirmation) },
+            trailing = @Composable { com.ritvik.passvault.ui.RevealToggle(showPasswords) { showPasswords = !showPasswords } },
         )
         PrimaryButton(
             text = "Change password",
@@ -742,6 +742,8 @@ private fun RecoveryKeyPage(
     // remember {} on purpose, never rememberSaveable {}: secrets must not go into the saved-state Bundle.
     var recoveryKey by remember { mutableStateOf("") }
     var regeneratePassword by remember { mutableStateOf("") }
+    var showKey by remember { mutableStateOf(false) }
+    var showRegenPassword by remember { mutableStateOf(false) }
     var keySaved by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.newRecoveryKey) {
@@ -749,14 +751,17 @@ private fun RecoveryKeyPage(
         keySaved = false
     }
 
-    SectionCard("Check your recovery key", info = "Type the recovery key you saved to confirm that it is correct. Nothing is changed.") {
+    SectionCard("Check your recovery key", info = "Type the recovery key you saved to confirm that it is correct. Nothing is changed. This is the key the \"Forgot password?\" button on the lock screen asks for.") {
         AppTextField(
             value = recoveryKey,
             onValueChange = { recoveryKey = it },
             label = "Recovery key",
+            secret = true,
+            revealed = showKey,
             enabled = !state.working,
             singleLine = false,
             minLines = 2,
+            trailing = @Composable { com.ritvik.passvault.ui.RevealToggle(showKey) { showKey = !showKey } },
         )
         SecondaryButton(
             text = "Check recovery key",
@@ -811,9 +816,11 @@ private fun RecoveryKeyPage(
                 onValueChange = { regeneratePassword = it },
                 label = "Master password",
                 secret = true,
+                revealed = showRegenPassword,
                 enabled = !state.working,
                 imeAction = ImeAction.Done,
                 onImeAction = { onRegenerateRecovery(regeneratePassword) },
+                trailing = @Composable { com.ritvik.passvault.ui.RevealToggle(showRegenPassword) { showRegenPassword = !showRegenPassword } },
             )
             SecondaryButton(
                 text = "Create new recovery key",

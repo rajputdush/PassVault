@@ -59,6 +59,18 @@ class AttemptLimiter(
         return delay
     }
 
+    /** Wrong passwords recorded since the last successful unlock. */
+    fun failureCount(): Int = store.failures
+
+    /**
+     * Wrong passwords that can still be entered before a wait starts (the last of them is the one that starts it).
+     * 0 once the waits have begun: every further wrong password then lengthens the wait ([nextDelayMs]).
+     */
+    fun attemptsLeft(): Int = (FIRST_WAIT_AT_FAILURE - store.failures).coerceAtLeast(0)
+
+    /** How long the wait would be after one more wrong password. */
+    fun nextDelayMs(): Long = delayAfterFailures(store.failures + 1)
+
     fun recordSuccess() {
         store.failures = 0
         store.lockedUntilMs = 0L
@@ -67,6 +79,18 @@ class AttemptLimiter(
 
     companion object {
         const val MAX_DELAY_MS = 60 * 60_000L
+
+        /** The wrong password with this number (counting from 1) is the first one that starts a wait. */
+        const val FIRST_WAIT_AT_FAILURE = 5
+
+        /** Countdown text for a live timer: "0:27", "4:05", "1:00:00". */
+        fun clock(ms: Long): String {
+            val total = ((ms + 999) / 1000).coerceAtLeast(0)
+            val h = total / 3600
+            val m = (total % 3600) / 60
+            val sec = total % 60
+            return if (h > 0) "%d:%02d:%02d".format(h, m, sec) else "%d:%02d".format(m, sec)
+        }
 
         fun delayAfterFailures(failures: Int): Long = when {
             failures < 5 -> 0L

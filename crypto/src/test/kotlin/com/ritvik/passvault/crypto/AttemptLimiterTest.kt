@@ -107,4 +107,27 @@ class AttemptLimiterTest {
         assertEquals("15 minutes", AttemptLimiter.describe(15 * 60_000L))
         assertEquals("60 minutes", AttemptLimiter.describe(60 * 60_000L))
     }
+
+    @Test
+    fun attemptsLeftCountsDownToTheFirstWait() {
+        assertEquals(5, limiter.attemptsLeft())
+        limiter.recordFailure()
+        assertEquals(4, limiter.attemptsLeft())
+        repeat(3) { limiter.recordFailure() }
+        assertEquals(1, limiter.attemptsLeft())
+        limiter.recordFailure()
+        assertEquals(0, limiter.attemptsLeft())
+        assertEquals(60_000L, limiter.nextDelayMs())
+        limiter.recordSuccess()
+        assertEquals(5, limiter.attemptsLeft())
+    }
+
+    @Test
+    fun clockFormatsACountdown() {
+        assertEquals("0:27", AttemptLimiter.clock(26_100))
+        assertEquals("0:00", AttemptLimiter.clock(0))
+        assertEquals("1:00", AttemptLimiter.clock(60_000))
+        assertEquals("15:00", AttemptLimiter.clock(15 * 60_000L))
+        assertEquals("1:00:00", AttemptLimiter.clock(60 * 60_000L))
+    }
 }

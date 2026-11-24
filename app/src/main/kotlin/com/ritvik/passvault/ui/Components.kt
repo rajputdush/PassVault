@@ -21,6 +21,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -366,4 +368,15 @@ fun EmergencyKitWarningDialog(onContinue: () -> Unit, onDismiss: () -> Unit) {
         confirmButton = { androidx.compose.material3.TextButton(onClick = onContinue) { Text("I understand, save it") } },
         dismissButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
+}
+
+/** The eye button for a password box: tap to show the text, tap again to hide it. */
+@androidx.compose.runtime.Composable
+fun RevealToggle(revealed: Boolean, onToggle: () -> Unit) {
+    IconButton(onClick = onToggle) {
+        Icon(
+            imageVector = if (revealed) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+            contentDescription = if (revealed) "Hide" else "Show",
+        )
+    }
 }

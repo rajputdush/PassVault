@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import com.ritvik.passvault.ui.Text
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -20,10 +21,12 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.ritvik.passvault.AppContainer
 import com.ritvik.passvault.canUseBiometrics
+import com.ritvik.passvault.crypto.AttemptLimiter
 import com.ritvik.passvault.startBiometricUnlock
 import com.ritvik.passvault.ui.AppTextField
 import com.ritvik.passvault.ui.ErrorText
 import com.ritvik.passvault.ui.PrimaryButton
+import com.ritvik.passvault.ui.RevealToggle
 import com.ritvik.passvault.ui.ScreenColumn
 import com.ritvik.passvault.ui.ScreenHeader
 import com.ritvik.passvault.ui.SecondaryButton
@@ -78,6 +81,8 @@ private fun PasswordUnlock(
 ) {
     // remember {} on purpose: rememberSaveable would write the password into the saved-state Bundle.
     var password by remember { mutableStateOf("") }
+    var revealed by remember { mutableStateOf(false) }
+    val locked = state.lockedForMs > 0
 
     ScreenHeader(
         icon = Icons.Filled.Lock,
@@ -90,17 +95,20 @@ private fun PasswordUnlock(
         onValueChange = { password = it },
         label = "Master password",
         secret = true,
+        revealed = revealed,
         enabled = !state.working,
         imeAction = ImeAction.Done,
         onImeAction = { onUnlock(password) },
+        trailing = @Composable { RevealToggle(revealed) { revealed = !revealed } },
     )
 
     ErrorText(state.error)
+    AttemptStatus(state)
 
     PrimaryButton(
-        text = "Unlock",
+        text = if (locked) "Locked: try again in ${AttemptLimiter.clock(state.lockedForMs)}" else "Unlock",
         onClick = { onUnlock(password) },
-        enabled = password.isNotEmpty(),
+        enabled = password.isNotEmpty() && !locked,
         loading = state.working,
     )
 
@@ -118,7 +126,29 @@ private fun PasswordUnlock(
         enabled = !state.working,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Text("Forgot password? Use recovery key")
+        Text("Forgot password?")
+    }
+}
+
+/** The live countdown while locked out, or how many tries are left after a mistake. Shows nothing before any mistake. */
+@Composable
+private fun AttemptStatus(state: UnlockUiState) {
+    when {
+        state.lockedForMs > 0 -> Text(
+            "Too many wrong attempts. Try again in ${AttemptLimiter.clock(state.lockedForMs)}.",
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.titleSmall,
+        )
+        state.failures > 0 && state.attemptsLeft > 0 -> Text(
+            "${state.attemptsLeft} ${if (state.attemptsLeft == 1) "attempt" else "attempts"} left before PassVault makes you wait.",
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        state.failures > 0 -> Text(
+            "Another wrong password locks PassVault for ${AttemptLimiter.describe(state.nextDelayMs)}.",
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodyMedium,
+        )
     }
 }
 
@@ -135,7 +165,7 @@ private fun RecoveryReset(
 
     ScreenHeader(
         icon = Icons.Filled.Lock,
-        title = "Reset with recovery key",
+        title = "Reset your password",
         subtitle = "Enter the recovery key you saved when you created the vault, then choose a new master password. Your saved items stay as they are.",
     )
 
@@ -143,9 +173,12 @@ private fun RecoveryReset(
         value = recoveryKey,
         onValueChange = { recoveryKey = it },
         label = "Recovery key",
+        secret = true,
+        revealed = showPasswords,
         enabled = !state.working,
         singleLine = false,
         minLines = 2,
+        trailing = @Composable { RevealToggle(showPasswords) { showPasswords = !showPasswords } },
     )
     AppTextField(
         value = newPassword,
@@ -154,9 +187,7 @@ private fun RecoveryReset(
         secret = true,
         revealed = showPasswords,
         enabled = !state.working,
-        trailing = @Composable {
-            TextButton(onClick = { showPasswords = !showPasswords }) { Text(if (showPasswords) "Hide" else "Show") }
-        },
+        trailing = @Composable { RevealToggle(showPasswords) { showPasswords = !showPasswords } },
     )
     com.ritvik.passvault.ui.PasswordStrengthBar(newPassword)
     AppTextField(
@@ -168,12 +199,13 @@ private fun RecoveryReset(
         enabled = !state.working,
         imeAction = ImeAction.Done,
         onImeAction = { onReset(recoveryKey, newPassword, confirmation) },
+        trailing = @Composable { RevealToggle(showPasswords) { showPasswords = !showPasswords } },
     )
 
     ErrorText(state.error)
 
     PrimaryButton(
-        text = "Reset password and unlock",
+        text = "Set new password and unlock",
         onClick = { onReset(recoveryKey, newPassword, confirmation) },
         enabled = recoveryKey.isNotBlank(),
         loading = state.working,

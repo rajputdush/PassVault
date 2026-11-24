@@ -23,6 +23,12 @@ data class UnlockUiState(
     val mode: UnlockMode = UnlockMode.PASSWORD,
     val working: Boolean = false,
     val error: String? = null,
+    /** Time left before another password may be tried (rounded up to whole seconds), 0 if none. */
+    val lockedForMs: Long = 0L,
+    /** Wrong passwords that can still be entered before a wait starts; shown only after a mistake. */
+    val attemptsLeft: Int = AttemptLimiter.FIRST_WAIT_AT_FAILURE,
+    val failures: Int = 0,
+    val nextDelayMs: Long = 0L,
 )
 
 class UnlockViewModel(private val container: AppContainer) : ViewModel() {
@@ -30,6 +36,28 @@ class UnlockViewModel(private val container: AppContainer) : ViewModel() {
     val state: StateFlow<UnlockUiState> = _state.asStateFlow()
 
     private val limiter get() = container.attemptLimiter
+
+    init {
+        // Keeps the countdown and "attempts left" up to date while the screen is open.
+        viewModelScope.launch {
+            while (true) {
+                refreshLock()
+                kotlinx.coroutines.delay(250)
+            }
+        }
+    }
+
+    private fun refreshLock() {
+        val remaining = limiter.remainingLockMs()
+        val shown = if (remaining > 0) ((remaining + 999) / 1000) * 1000 else 0L
+        val left = limiter.attemptsLeft()
+        val fails = limiter.failureCount()
+        val next = limiter.nextDelayMs()
+        _state.update {
+            if (it.lockedForMs == shown && it.attemptsLeft == left && it.failures == fails && it.nextDelayMs == next) it
+            else it.copy(lockedForMs = shown, attemptsLeft = left, failures = fails, nextDelayMs = next)
+        }
+    }
 
     fun showRecovery(show: Boolean) {
         _state.update { it.copy(mode = if (show) UnlockMode.RECOVERY else UnlockMode.PASSWORD, error = null) }
@@ -39,7 +67,7 @@ class UnlockViewModel(private val container: AppContainer) : ViewModel() {
         if (_state.value.working || password.isEmpty()) return
         val wait = limiter.remainingLockMs()
         if (wait > 0) {
-            fail("Too many wrong attempts. Try again in ${AttemptLimiter.describe(wait)}.")
+            refreshLock() // the live countdown on screen says how long is left
             return
         }
         _state.update { it.copy(working = true, error = null) }
@@ -52,14 +80,9 @@ class UnlockViewModel(private val container: AppContainer) : ViewModel() {
                 container.session.unlock(key)
                 _state.update { it.copy(working = false) }
             } catch (e: WrongCredentialsException) {
-                val delay = limiter.recordFailure()
-                fail(
-                    if (delay > 0) {
-                        "Wrong master password. Too many attempts: try again in ${AttemptLimiter.describe(delay)}."
-                    } else {
-                        "Wrong master password."
-                    },
-                )
+                limiter.recordFailure()
+                refreshLock()
+                fail("Wrong master password.")
             } catch (e: VaultFormatException) {
                 fail("The vault file is damaged or from a newer version of the app.")
             } catch (e: Exception) {

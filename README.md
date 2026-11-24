@@ -32,7 +32,7 @@ PassVault is an offline Android password manager written in Kotlin with Jetpack 
 - Clipboard marked as sensitive and cleared automatically after a time you choose.
 - Screenshots, screen recording and the recent-apps preview are blocked by default; a switch in Settings allows them.
 - Encrypted activity log of unlocks, copies, autofill, deletes and restores (item titles only, never passwords or notes). Optional; the latest 500 events are kept.
-- Wrong-password lockout.
+- Wrong-password lockout with a live countdown and a count of attempts left. Eye buttons show or hide the master password and recovery key on the lock screen and in Settings.
 
 **Data portability**
 - Encrypted backup and restore.
@@ -104,7 +104,7 @@ echo "sdk.dir=$HOME/Android/Sdk" > local.properties
 
 The debug build is signed with Android's debug key; a release APK needs your own keystore (copy `keystore.properties.example` to `keystore.properties`). A phone cannot install a release build over a debug build, because the signing keys differ. Signing and release steps are in [`docs/RELEASE.md`](docs/RELEASE.md).
 
-Tests: the `crypto` module has 216 JVM unit tests (crypto, key handling, lockout, import, share codes, search, TOTP, autofill matching and more), and `app/src/androidTest` has 4 instrumented tests. Backup and restore, the settings screens and the Compose UI have no automated tests yet.
+Tests: the `crypto` module has 218 JVM unit tests (crypto, key handling, lockout, import, share codes, search, TOTP, autofill matching and more), and `app/src/androidTest` has 4 instrumented tests. Backup and restore, the settings screens and the Compose UI have no automated tests yet.
 
 ## Backup, restore and import
 
@@ -113,7 +113,7 @@ Tests: the `crypto` module has 216 JVM unit tests (crypto, key handling, lockout
 - To open a backup you need the master password that was current when the backup was made, or your recovery key. If you change the password later, make a new backup.
 
 **Restore**
-- On a fresh install, choose "Restore from backup" on the first screen and pick the file, then unlock with the password from backup time or use "Forgot password? Use recovery key".
+- On a fresh install, choose "Restore from backup" on the first screen and pick the file, then unlock with the password from backup time or tap "Forgot password?" and use your recovery key.
 - Restore only works on a fresh install. It never overwrites an existing vault.
 
 **Import**
